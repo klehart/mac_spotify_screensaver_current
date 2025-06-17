@@ -1,0 +1,280 @@
+<!--
+//Portions of this code are adapted from https://github.com/11ason/Spotify-Now-Playing
+// Copyright (c) 11ason
+// Licensed under the MIT License-->
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            background: #111;
+            color: #fff;
+            font-family: 'Nunito', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 0 20px #0008;
+            max-width: 420px;
+            width: 100%;
+        }
+
+        #albumImage {
+            width: 250px;
+            height: 250px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        #lyrics-container {
+            margin: 20px 0;
+            min-height: 80px;
+            text-align: center;
+        }
+
+        .lyric {
+            color: #bbb;
+            font-size: 18px;
+        }
+
+        #current-lyric {
+            color: #fff;
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 10px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #444;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: #1db954;
+            width: 0%;
+        }
+
+        #time {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #ccc;
+        }
+
+        #songInfo {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        #trackName {
+            font-size: 20px;
+            margin: 0;
+        }
+
+        #artistName {
+            font-size: 16px;
+            color: #aaa;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-container">
+        <img id="albumImage" src="play-pause.png" alt="Album Cover">
+        <div id="lyrics-container">
+            <div id="previous-lyric" class="lyric"></div>
+            <div id="current-lyric" class="lyric"></div>
+            <div id="next-lyric" class="lyric"></div>
+        </div>
+        <div class="progress-bar-container">
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+            <div id="time">
+                <div id="elapsed-time">00:00</div>
+                <div id="total-time">00:00</div>
+            </div>
+        </div>
+        <div id="songInfo">
+            <h2 id="trackName">Spotify pausiert</h2>
+            <span id="artistName">Es wird nichts wiedergegeben</span>
+        </div>
+    </div>
+    <script>
+        fetch('http://localhost:8888/token')
+            .then(res => res.json())
+            .then(data => {
+                const token = data.access_token;
+                return fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+            })
+            .then(res => res.json())
+            .then(nowPlaying => {
+                console.log(nowPlaying);
+            })
+            .catch(err => console.error(err));
+
+        function fetchCurrentlyPlayingSong() {
+            fetch('http://localhost:8888/nowplaying')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.item) {
+                        updateTrackInfo(data.item);
+                        updatePlaybackInfo(data.progress_ms, data.item.duration_ms);
+                        fetchLyrics(
+                            data.item.name,
+                            data.item.artists.map(artist => artist.name).join(', '),
+                            data.item.album.name,
+                            data.item.duration_ms / 1000
+                        );
+                    }
+                })
+                .catch(error => console.error('Error fetching currently playing song:', error));
+        }
+
+        function updateTrackInfo(item) {
+            const songName = item.name;
+            const artists = item.artists.map(artist => artist.name).join(', ');
+            const albumImage = item.album.images[0].url;
+
+            document.getElementById('trackName').textContent = songName;
+            document.getElementById('artistName').textContent = artists;
+
+            if (albumImage !== currentAlbumImage) {
+                currentAlbumImage = albumImage;
+                const albumImageElement = document.getElementById('albumImage');
+                albumImageElement.style.opacity = '0';
+                setTimeout(() => {
+                    albumImageElement.src = albumImage;
+                    albumImageElement.style.opacity = '1';
+                }, 300);
+            }
+        }
+
+        function updatePlaybackInfo(progressMs, durationMs) {
+            playbackStartTime = Date.now() - (progressMs + syncOffset);
+            currentTrackDuration = durationMs / 1000;
+            lastProgressUpdate = (Date.now() - playbackStartTime) / 1000;
+            updateProgressBar();
+            updateTimestamps();
+        }
+
+        function updateProgressBar() {
+            const now = (Date.now() - playbackStartTime) / 1000;
+            const progressPercentage = (now / currentTrackDuration) * 100;
+            document.getElementById('progress').style.width = `${progressPercentage}%`;
+        }
+
+        function updateTimestamps() {
+            const now = (Date.now() - playbackStartTime) / 1000;
+            const elapsed = formatTime(now);
+            const total = formatTime(currentTrackDuration);
+
+            document.getElementById('elapsed-time').textContent = elapsed;
+            document.getElementById('total-time').textContent = total;
+        }
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function fetchLyrics(trackName, artistName, albumName, duration) {
+            const apiUrl = `https://lrclib.net/api/get?track_name=${encodeURIComponent(trackName)}&artist_name=${encodeURIComponent(artistName)}&album_name=${encodeURIComponent(albumName)}&duration=${duration}`;
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    const lyricsContainer = document.getElementById('lyrics-container');
+                    if (data.syncedLyrics) {
+                        lyrics = parseLRC(data.syncedLyrics);
+                        lyricsContainer.style.display = 'block';
+                        displayLyrics();
+                    } else {
+                        lyricsContainer.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching lyrics:', error);
+                    document.getElementById('lyrics-container').style.display = 'none';
+                });
+        }
+
+        function parseLRC(lrcText) {
+            const lines = lrcText.split('\n');
+            return lines.map(line => {
+                const timeMatch = line.match(/\[(\d{2}):(\d{2}\.\d{2})\]/);
+                if (timeMatch) {
+                    const time = parseFloat(timeMatch[1]) * 60 + parseFloat(timeMatch[2]);
+                    const text = line.replace(/\[.*?\]/g, '').trim();
+                    return { time, text };
+                }
+                return null;
+            }).filter(line => line !== null);
+        }
+
+        function displayLyrics() {
+            const now = (Date.now() - playbackStartTime) / 1000;
+            const lyricIndex = lyrics.findIndex(lyric => lyric.time > now);
+
+            if (lyricIndex > 0) {
+                document.getElementById('previous-lyric').textContent = lyrics[lyricIndex - 1].text;
+            } else {
+                document.getElementById('previous-lyric').textContent = '';
+            }
+
+            if (lyricIndex < lyrics.length) {
+                document.getElementById('current-lyric').textContent = lyrics[lyricIndex].text;
+            } else {
+                document.getElementById('current-lyric').textContent = '';
+            }
+
+            if (lyricIndex < lyrics.length - 1) {
+                document.getElementById('next-lyric').textContent = lyrics[lyricIndex + 1].text;
+            } else {
+                document.getElementById('next-lyric').textContent = '';
+            }
+        }
+
+        let currentAlbumImage = '';
+        let playbackStartTime = 0;
+        let currentTrackDuration = 0;
+        let lastProgressUpdate = 0;
+        let lyrics = [];
+        let syncOffset = -2000;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchCurrentlyPlayingSong();
+            setInterval(fetchCurrentlyPlayingSong, 1000);
+        });
+    </script>
+</body>
+
+</html>

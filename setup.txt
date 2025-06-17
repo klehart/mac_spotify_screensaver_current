@@ -1,0 +1,123 @@
+1.
+    npm install express
+
+2.
+    npm install dotenv
+
+3.
+    npm install axios
+
+4.
+    npm install cors
+
+5.
+    npm install open
+
+6.
+    go to https://developer.spotify.com/dashboard and create a new app
+
+    redirect:
+    http://127.0.0.1:8080/app
+    http://127.0.0.1:8888/callback
+    http://127.0.0.1:8080/appc
+    http://127.0.0.1:8080/pc
+    http://127.0.0.1:8080/
+    http://127.0.0.1:8080/p
+
+7.
+    input your details  in .env.example file
+
+8.
+    rename .env.example to .env
+
+9.
+    node server.js
+    node spotify-proxy.js
+
+10.
+    browser should open and ask you to login to spotify
+    there should be a success message after
+
+11.
+    go to http://localhost:8080 to make sure everything is working
+
+12.
+    go and download the latest release of https://github.com/liquidx/webviewscreensaver
+    and follow the instructions to install it
+
+13.
+    open the screensaver settings/options, add the desired url http://localhost:8080/ app/appc/p/pc
+
+14.
+    configure autostart of localhosts vis script(launchd)
+    get the location of the files
+    open terminal
+14.1:
+    1:
+    nano ~/Library/LaunchAgents/com.klehart.server.plist
+    2:
+
+    <?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+ "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.klehart.server</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/node</string>
+        <string>"YOUR_PATH HERE"/server.js</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>"YOUR_PATH HERE"</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/tmp/server.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/server-error.log</string>
+</dict>
+</plist>
+
+    3:
+    press control + o,
+    then enter,
+    then control + x
+
+14.2:
+    the same thing for spotify-proxy.js
+    1:
+    nano ~/Library/LaunchAgents/com.klehart.spotifyproxy.plist
+    2:
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+ "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.klehart.spotifyproxy</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/node</string>
+        <string>"YOUR_PATH HERE"/spotify-proxy.js</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>"YOUR_PATH HERE"</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/tmp/spotifyproxy.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/spotifyproxy-error.log</string>
+</dict>
+</plist>
+
+3:
+    press control + o,
+    then enter,
+    then control + x
+
+15:
+restart your computer(or just log out)
