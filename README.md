@@ -143,6 +143,12 @@ In the screensaver settings, add the desired URL(s):
 ### 8. Set Up Autostart (macOS launchd)
 
 Get the location of the files and add the path to the following XML code.
+If you get an error, you may want to check the path of your node:
+```
+which node
+```
+
+
 
 #### For `server.js`:
 
@@ -230,7 +236,7 @@ Get the location of the files and add the path to the following XML code.
 
 ### 9. Restart your computer or log out/in to start the services.
 
-##### When lyrics are kinda off, change the ```syncOffset```
+##### When lyrics are kinda off, change the ```syncOffset``` in the html to make them more synchronous.
 
 ---
 
