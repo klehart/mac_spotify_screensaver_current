@@ -1,0 +1,1 @@
+# mac_spotify_screensaver_current
